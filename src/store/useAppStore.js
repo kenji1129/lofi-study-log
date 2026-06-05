@@ -196,6 +196,7 @@ function defaultState() {
       backgroundUrl: '',        // user-uploaded data URL (overrides preset)
       crt: true,
       showCharacter: true,
+      parallax: true, // 2.5D depth that follows the cursor
     },
   }
 }

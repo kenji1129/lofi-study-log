@@ -156,6 +156,12 @@ export default function SettingsPanel() {
           onChange={(v) => setSettings({ showCharacter: v })}
         />
         <Toggle
+          label="2.5D 奥行き効果"
+          hint="カーソルに合わせて立体的に動く"
+          on={settings.parallax !== false}
+          onChange={(v) => setSettings({ parallax: v })}
+        />
+        <Toggle
           label="字幕（Kikyouのことば）"
           on={settings.subtitlesOn}
           onChange={(v) => setSettings({ subtitlesOn: v })}
