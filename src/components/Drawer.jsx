@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import { clockParts } from '../lib/date'
 import Icon from './Icon'
@@ -26,8 +26,20 @@ export default function Drawer() {
   const openPanel = useAppStore((s) => s.openPanel)
   const closePanel = useAppStore((s) => s.closePanel)
   const [now, setNow] = useState(() => new Date())
+  const prevIndexRef = useRef(-1)
 
   const isTabbed = active && PANELS[active]
+  const index = TABS.findIndex((t) => t.key === active)
+
+  // direction of the tab change: +1 → slide in from the right, -1 → from left
+  const dir =
+    prevIndexRef.current === -1 || index === -1
+      ? 0
+      : Math.sign(index - prevIndexRef.current)
+
+  useEffect(() => {
+    if (index !== -1) prevIndexRef.current = index
+  }, [index])
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000)
@@ -74,7 +86,13 @@ export default function Drawer() {
         </div>
 
         <div className="drawer__body scroll">
-          <Panel />
+          <div
+            className="panel-anim"
+            key={active}
+            style={{ '--enter-x': dir > 0 ? '22px' : dir < 0 ? '-22px' : '0px' }}
+          >
+            <Panel />
+          </div>
         </div>
       </aside>
     </>
