@@ -57,11 +57,15 @@ export default function App() {
         <Subtitle />
       </div>
 
-      {/* when UI is hidden, a faint hint to bring it back */}
+      {/* when UI is hidden, the whole screen becomes a tap target to bring it back */}
       {uiHidden && (
-        <button className="show-ui-hint" onClick={toggleUI} title="UIを表示 (H)">
-          画面をタップしてUIを表示
-        </button>
+        <div
+          className="restore-ui"
+          onClick={toggleUI}
+          title="画面をタップしてUIを表示"
+        >
+          <span className="restore-ui__hint">画面をタップしてUIを表示</span>
+        </div>
       )}
 
       <Drawer />

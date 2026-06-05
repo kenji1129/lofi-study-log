@@ -678,21 +678,37 @@ input[type='range']::-moz-range-thumb {
 }
 
 /* show-ui hint */
-.show-ui-hint {
+/* full-screen tap target shown while the UI is hidden */
+.restore-ui {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  cursor: pointer;
+}
+.restore-ui__hint {
   position: absolute;
   left: 50%;
-  bottom: 26px;
+  bottom: 30px;
   transform: translateX(-50%);
-  color: var(--text-faint);
+  color: var(--text);
   font-size: 13px;
   letter-spacing: 0.06em;
-  padding: 8px 16px;
+  padding: 9px 18px;
   border-radius: 999px;
-  animation: fadepulse 2.6s ease-in-out infinite;
+  background: rgba(12, 10, 22, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  white-space: nowrap;
+  /* clearly visible for a few seconds, then settles to a gentle pulse */
+  animation: restoreHintIn 0.4s ease both, fadepulse 2.6s ease-in-out 3.4s infinite;
+}
+@keyframes restoreHintIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to { opacity: 0.85; transform: translateX(-50%) translateY(0); }
 }
 @keyframes fadepulse {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.7; }
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.75; }
 }
 
 /* portrait / small screens: stack rails sensibly */
