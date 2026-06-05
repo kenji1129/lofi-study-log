@@ -4,6 +4,7 @@ import { uid } from '../lib/id'
 import { dayKey } from '../lib/date'
 import { getLevelInfo, XP } from '../lib/level'
 import { TRACKS } from '../data/tracks'
+import { putAudio, deleteAudio } from '../lib/audioDB'
 
 // All lines Kikyou can say. Split by context for weighted auto-pick.
 export const LINES = {
@@ -179,6 +180,10 @@ function defaultState() {
       shuffle: false,
       repeat: false,
     },
+    // user-uploaded tracks: { id, title, artist, src(objectURL) }.
+    // metadata is persisted; the audio blob lives in IndexedDB and the
+    // objectURL `src` is rehydrated on load.
+    customTracks: [],
 
     /* ---- Settings ---- */
     settings: {
@@ -425,22 +430,58 @@ export const useAppStore = create(
         set((s) => ({ player: { ...s.player, playing: !s.player.playing } })),
       nextTrack: () =>
         set((s) => {
+          const total = TRACKS.length + s.customTracks.length
           const { shuffle, trackIndex } = s.player
-          let i = shuffle
-            ? Math.floor(Math.random() * TRACKS.length)
-            : (trackIndex + 1) % TRACKS.length
+          const i = shuffle
+            ? Math.floor(Math.random() * total)
+            : (trackIndex + 1) % total
           return { player: { ...s.player, trackIndex: i, playing: true } }
         }),
       prevTrack: () =>
-        set((s) => ({
-          player: {
-            ...s.player,
-            trackIndex: (s.player.trackIndex - 1 + TRACKS.length) % TRACKS.length,
-            playing: true,
-          },
-        })),
+        set((s) => {
+          const total = TRACKS.length + s.customTracks.length
+          return {
+            player: {
+              ...s.player,
+              trackIndex: (s.player.trackIndex - 1 + total) % total,
+              playing: true,
+            },
+          }
+        }),
       selectTrack: (i) =>
         set((s) => ({ player: { ...s.player, trackIndex: i, playing: true } })),
+
+      /* =================== Custom tracks (user uploads) =================== */
+      addCustomTrack: async (file) => {
+        const id = uid('ctrack')
+        await putAudio(id, file)
+        const src = URL.createObjectURL(file)
+        const title = file.name.replace(/\.[^.]+$/, '') // strip extension
+        set((s) => ({
+          customTracks: [...s.customTracks, { id, title, artist: 'カスタム', src }],
+        }))
+      },
+      removeCustomTrack: async (id) => {
+        await deleteAudio(id)
+        set((s) => {
+          const ct = s.customTracks.find((t) => t.id === id)
+          if (ct?.src) URL.revokeObjectURL(ct.src)
+          const customTracks = s.customTracks.filter((t) => t.id !== id)
+          const total = TRACKS.length + customTracks.length
+          let player = s.player
+          if (s.player.trackIndex >= total) {
+            player = { ...s.player, trackIndex: 0, playing: false }
+          }
+          return { customTracks, player }
+        })
+      },
+      // fill in the objectURL for a persisted custom track after reload
+      setCustomTrackSrc: (id, src) =>
+        set((s) => ({
+          customTracks: s.customTracks.map((t) =>
+            t.id === id ? { ...t, src } : t,
+          ),
+        })),
 
       /* =================== Settings =================== */
       setSettings: (patch) =>
@@ -458,6 +499,8 @@ export const useAppStore = create(
         xp: s.xp,
         settings: s.settings,
         player: { ...s.player, playing: false },
+        // store only metadata; the audio blob lives in IndexedDB
+        customTracks: s.customTracks.map(({ id, title, artist }) => ({ id, title, artist })),
         pomodoro: {
           workMin: s.pomodoro.workMin,
           breakMin: s.pomodoro.breakMin,
@@ -478,6 +521,8 @@ export const useAppStore = create(
         }
         merged.player = { ...current.player, ...(p.player || {}), playing: false }
         merged.settings = { ...current.settings, ...(p.settings || {}) }
+        // custom tracks: keep persisted metadata; src is rehydrated from IndexedDB
+        merged.customTracks = (p.customTracks || []).map((t) => ({ ...t, src: undefined }))
         merged.activePanel = null
         merged.uiHidden = false
         if (!merged.activeListId && merged.todoLists?.length)

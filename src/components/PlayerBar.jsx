@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import { TRACKS } from '../data/tracks'
 import { BACKGROUNDS } from '../data/backgrounds'
@@ -16,6 +16,9 @@ export default function PlayerBar() {
   const prev = useAppStore((s) => s.prevTrack)
   const setPlayer = useAppStore((s) => s.setPlayer)
   const selectTrack = useAppStore((s) => s.selectTrack)
+  const customTracks = useAppStore((s) => s.customTracks)
+  const addCustomTrack = useAppStore((s) => s.addCustomTrack)
+  const removeCustomTrack = useAppStore((s) => s.removeCustomTrack)
 
   const [showTracks, setShowTracks] = useState(false)
   const [showBg, setShowBg] = useState(false)
@@ -23,7 +26,17 @@ export default function PlayerBar() {
   const [dur, setDur] = useState(0)
   const barRef = useRef(null)
   const bgFileRef = useRef(null)
-  const track = TRACKS[player.trackIndex]
+  const audioFileRef = useRef(null)
+
+  const playlist = useMemo(() => [...TRACKS, ...customTracks], [customTracks])
+  const track = playlist[player.trackIndex] || playlist[0]
+  const builtInCount = TRACKS.length
+
+  const onAudioFiles = (e) => {
+    const files = Array.from(e.target.files || [])
+    files.forEach((f) => addCustomTrack(f))
+    e.target.value = ''
+  }
 
   const activeBgId = useAppStore((s) => s.settings.backgroundId)
   const activeBgUrl = useAppStore((s) => s.settings.backgroundUrl)
@@ -196,29 +209,66 @@ export default function PlayerBar() {
       </div>
 
       {showTracks && (
-        <div className="tracklist glass">
-          <div className="tracklist__head">プレイリスト</div>
-          <div className="tracklist__scroll scroll">
-            {TRACKS.map((t, i) => (
-              <button
-                key={t.title}
-                className={`tracklist__item${i === player.trackIndex ? ' is-active' : ''}`}
-                onClick={() => {
-                  selectTrack(i)
-                  setShowTracks(false)
-                }}
-              >
-                <span className="tracklist__dot" style={{ background: t.color }} />
-                <span className="tracklist__title">{t.title}</span>
-                {i === player.trackIndex && player.playing && (
-                  <span className="tracklist__eq">
-                    <i></i><i></i><i></i>
-                  </span>
-                )}
-              </button>
-            ))}
+        <>
+          <div className="player__pop-scrim" onClick={() => setShowTracks(false)} />
+          <div className="tracklist glass">
+            <div className="tracklist__head">プレイリスト</div>
+            <div className="tracklist__scroll scroll">
+              {playlist.map((t, i) => {
+                const isCustom = i >= builtInCount
+                return (
+                  <div
+                    key={t.id || t.title}
+                    className={`tracklist__item${i === player.trackIndex ? ' is-active' : ''}`}
+                  >
+                    <button
+                      className="tracklist__pick"
+                      onClick={() => {
+                        selectTrack(i)
+                        setShowTracks(false)
+                      }}
+                    >
+                      <span
+                        className="tracklist__dot"
+                        style={{ background: t.color || 'var(--magenta)' }}
+                      />
+                      <span className="tracklist__title">{t.title}</span>
+                      {isCustom && <span className="tracklist__tag">カスタム</span>}
+                      {i === player.trackIndex && player.playing && (
+                        <span className="tracklist__eq">
+                          <i></i><i></i><i></i>
+                        </span>
+                      )}
+                    </button>
+                    {isCustom && (
+                      <button
+                        className="icon-btn tracklist__del"
+                        title="削除"
+                        onClick={() => removeCustomTrack(t.id)}
+                      >
+                        <Icon name="trash" size={15} />
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+            <button
+              className="tracklist__add"
+              onClick={() => audioFileRef.current?.click()}
+            >
+              <Icon name="plus" size={16} /> 楽曲を追加（自分の音源）
+            </button>
+            <input
+              ref={audioFileRef}
+              type="file"
+              accept="audio/*"
+              multiple
+              hidden
+              onChange={onAudioFiles}
+            />
           </div>
-        </div>
+        </>
       )}
     </div>
   )
