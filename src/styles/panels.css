@@ -333,6 +333,29 @@
 .task__del:hover {
   color: var(--red);
 }
+.task__drag {
+  color: var(--text-faint);
+  cursor: grab;
+  display: grid;
+  place-items: center;
+  touch-action: none;
+}
+.task__drag:active {
+  cursor: grabbing;
+}
+
+/* dragging feedback (shared) */
+.note-row.is-dragging,
+.task.is-dragging,
+.habit-card.is-dragging {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  border-color: var(--glass-border-strong);
+  opacity: 0.95;
+}
+.note-row__drag:active,
+.habit-card__drag:active {
+  cursor: grabbing;
+}
 
 /* ===================== Habits ===================== */
 .habit-actions {

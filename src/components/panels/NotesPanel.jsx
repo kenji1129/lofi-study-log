@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { useAppStore } from '../../store/useAppStore'
 import Icon from '../Icon'
+import { SortableList } from '../Sortable'
 
 export default function NotesPanel() {
   const notes = useAppStore((s) => s.notes)
   const addNote = useAppStore((s) => s.addNote)
   const updateNote = useAppStore((s) => s.updateNote)
   const removeNote = useAppStore((s) => s.removeNote)
+  const reorderNotes = useAppStore((s) => s.reorderNotes)
   const [openId, setOpenId] = useState(null)
 
   const open = notes.find((n) => n.id === openId)
@@ -42,12 +44,19 @@ export default function NotesPanel() {
         <span className="plus">＋</span> 新しいページ
       </button>
       <hr className="divider" />
-      <div className="note-list">
-        {notes.length === 0 && (
-          <p className="empty">まだページがありません</p>
-        )}
-        {notes.map((n) => (
-          <div className="note-row" key={n.id}>
+      {notes.length === 0 && <p className="empty">まだページがありません</p>}
+      <SortableList
+        className="note-list"
+        items={notes}
+        getId={(n) => n.id}
+        onReorder={reorderNotes}
+      >
+        {(n, { ref, style, isDragging, handleProps }) => (
+          <div
+            ref={ref}
+            style={style}
+            className={`note-row${isDragging ? ' is-dragging' : ''}`}
+          >
             <button className="note-row__main" onClick={() => setOpenId(n.id)}>
               <span className="note-row__title">{n.title || '無題のページ'}</span>
               {n.body && <span className="note-row__preview">{n.body.slice(0, 40)}</span>}
@@ -59,12 +68,12 @@ export default function NotesPanel() {
             >
               <Icon name="trash" size={18} />
             </button>
-            <span className="note-row__drag">
+            <span className="note-row__drag" title="ドラッグで並べ替え" {...handleProps}>
               <Icon name="drag" size={18} />
             </span>
           </div>
-        ))}
-      </div>
+        )}
+      </SortableList>
     </div>
   )
 }

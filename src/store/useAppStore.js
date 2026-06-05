@@ -296,8 +296,8 @@ export const useAppStore = create(
         })),
       removeNote: (id) =>
         set((s) => ({ notes: s.notes.filter((n) => n.id !== id) })),
-      reorderNotes: (from, to) =>
-        set((s) => ({ notes: move(s.notes, from, to) })),
+      reorderNotes: (activeId, overId) =>
+        set((s) => ({ notes: moveById(s.notes, activeId, overId) })),
 
       /* =================== Todo =================== */
       addList: () =>
@@ -366,6 +366,12 @@ export const useAppStore = create(
               : l,
           ),
         })),
+      reorderTasks: (listId, activeId, overId) =>
+        set((s) => ({
+          todoLists: s.todoLists.map((l) =>
+            l.id === listId ? { ...l, tasks: moveById(l.tasks, activeId, overId) } : l,
+          ),
+        })),
 
       /* =================== Habits =================== */
       addHabit: () =>
@@ -400,6 +406,8 @@ export const useAppStore = create(
         })),
       removeHabit: (id) =>
         set((s) => ({ habits: s.habits.filter((h) => h.id !== id) })),
+      reorderHabits: (activeId, overId) =>
+        set((s) => ({ habits: moveById(s.habits, activeId, overId) })),
 
       /* =================== Calendar / day log =================== */
       setDiary: (key, diary) =>
@@ -519,6 +527,14 @@ function move(arr, from, to) {
   const [item] = copy.splice(from, 1)
   copy.splice(to, 0, item)
   return copy
+}
+
+// reorder by item id (works even when items are shown in filtered groups)
+function moveById(arr, activeId, overId) {
+  const from = arr.findIndex((x) => x.id === activeId)
+  const to = arr.findIndex((x) => x.id === overId)
+  if (from === -1 || to === -1) return arr
+  return move(arr, from, to)
 }
 
 /* convenience selector hook for the active todo list */

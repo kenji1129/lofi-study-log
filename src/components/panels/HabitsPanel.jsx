@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAppStore } from '../../store/useAppStore'
 import { weekStrip, dayKey, weekdayJP } from '../../lib/date'
 import Icon from '../Icon'
+import { SortableList } from '../Sortable'
 
 export default function HabitsPanel() {
   const habits = useAppStore((s) => s.habits)
@@ -9,6 +10,7 @@ export default function HabitsPanel() {
   const toggleHabit = useAppStore((s) => s.toggleHabit)
   const renameHabit = useAppStore((s) => s.renameHabit)
   const removeHabit = useAppStore((s) => s.removeHabit)
+  const reorderHabits = useAppStore((s) => s.reorderHabits)
   const [edit, setEdit] = useState(false)
 
   const [anchor, setAnchor] = useState(() => new Date())
@@ -75,10 +77,19 @@ export default function HabitsPanel() {
       </div>
 
       {/* habit rows */}
-      <div className="habit-list">
-        {habits.length === 0 && <p className="empty">習慣を追加しよう</p>}
-        {habits.map((h) => (
-          <div className="habit-card" key={h.id} style={{ '--habit': h.color }}>
+      {habits.length === 0 && <p className="empty">習慣を追加しよう</p>}
+      <SortableList
+        className="habit-list"
+        items={habits}
+        getId={(h) => h.id}
+        onReorder={reorderHabits}
+      >
+        {(h, { ref, style, isDragging, handleProps }) => (
+          <div
+            className={`habit-card${isDragging ? ' is-dragging' : ''}`}
+            ref={ref}
+            style={{ ...style, '--habit': h.color }}
+          >
             <div className="habit-card__head">
               <span className="habit-card__streak" title="連続日数">
                 🔥 {streak(h)}
@@ -101,7 +112,7 @@ export default function HabitsPanel() {
                   <Icon name="trash" size={16} />
                 </button>
               ) : (
-                <span className="habit-card__drag">
+                <span className="habit-card__drag" title="ドラッグで並べ替え" {...handleProps}>
                   <Icon name="drag" size={16} />
                 </span>
               )}
@@ -125,8 +136,8 @@ export default function HabitsPanel() {
               })}
             </div>
           </div>
-        ))}
-      </div>
+        )}
+      </SortableList>
     </div>
   )
 }

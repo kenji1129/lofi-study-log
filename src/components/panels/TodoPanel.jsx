@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAppStore, useActiveList } from '../../store/useAppStore'
 import Icon from '../Icon'
+import { SortableList } from '../Sortable'
 
 export default function TodoPanel() {
   const lists = useAppStore((s) => s.todoLists)
@@ -12,6 +13,7 @@ export default function TodoPanel() {
   const addTask = useAppStore((s) => s.addTask)
   const toggleTask = useAppStore((s) => s.toggleTask)
   const removeTask = useAppStore((s) => s.removeTask)
+  const reorderTasks = useAppStore((s) => s.reorderTasks)
 
   const [draft, setDraft] = useState('')
   const [showDone, setShowDone] = useState(true)
@@ -116,17 +118,24 @@ export default function TodoPanel() {
         <Icon name={showOpen ? 'chevUp' : 'chevDown'} size={20} />
       </button>
       {showOpen && (
-        <div className="todo-items">
+        <>
           {openTasks.length === 0 && <p className="empty">タスクはありません</p>}
-          {openTasks.map((t) => (
-            <TaskRow
-              key={t.id}
-              task={t}
-              onToggle={() => toggleTask(list.id, t.id)}
-              onRemove={() => removeTask(list.id, t.id)}
-            />
-          ))}
-        </div>
+          <SortableList
+            className="todo-items"
+            items={openTasks}
+            getId={(t) => t.id}
+            onReorder={(a, b) => reorderTasks(list.id, a, b)}
+          >
+            {(t, sortable) => (
+              <TaskRow
+                task={t}
+                sortable={sortable}
+                onToggle={() => toggleTask(list.id, t.id)}
+                onRemove={() => removeTask(list.id, t.id)}
+              />
+            )}
+          </SortableList>
+        </>
       )}
 
       <hr className="divider" />
@@ -137,25 +146,37 @@ export default function TodoPanel() {
         <Icon name={showDone ? 'chevUp' : 'chevDown'} size={20} />
       </button>
       {showDone && (
-        <div className="todo-items">
+        <>
           {doneTasks.length === 0 && <p className="empty">まだありません</p>}
-          {doneTasks.map((t) => (
-            <TaskRow
-              key={t.id}
-              task={t}
-              onToggle={() => toggleTask(list.id, t.id)}
-              onRemove={() => removeTask(list.id, t.id)}
-            />
-          ))}
-        </div>
+          <SortableList
+            className="todo-items"
+            items={doneTasks}
+            getId={(t) => t.id}
+            onReorder={(a, b) => reorderTasks(list.id, a, b)}
+          >
+            {(t, sortable) => (
+              <TaskRow
+                task={t}
+                sortable={sortable}
+                onToggle={() => toggleTask(list.id, t.id)}
+                onRemove={() => removeTask(list.id, t.id)}
+              />
+            )}
+          </SortableList>
+        </>
       )}
     </div>
   )
 }
 
-function TaskRow({ task, onToggle, onRemove }) {
+function TaskRow({ task, onToggle, onRemove, sortable }) {
+  const { ref, style, isDragging, handleProps } = sortable
   return (
-    <div className={`task${task.done ? ' is-done' : ''}`}>
+    <div
+      ref={ref}
+      style={style}
+      className={`task${task.done ? ' is-done' : ''}${isDragging ? ' is-dragging' : ''}`}
+    >
       <button className="task__check" onClick={onToggle} aria-label="切り替え">
         {task.done && <Icon name="check" size={16} />}
       </button>
@@ -163,6 +184,9 @@ function TaskRow({ task, onToggle, onRemove }) {
       <button className="icon-btn task__del" onClick={onRemove} title="削除">
         <Icon name="trash" size={16} />
       </button>
+      <span className="task__drag" title="ドラッグで並べ替え" {...handleProps}>
+        <Icon name="drag" size={16} />
+      </span>
     </div>
   )
 }
