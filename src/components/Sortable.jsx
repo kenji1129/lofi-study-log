@@ -11,7 +11,6 @@ import {
   verticalListSortingStrategy,
   useSortable,
 } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 
 // Generic drag-to-reorder list. `children` is a render function:
 //   (item, { ref, style, isDragging, handleProps }) => JSX
@@ -60,8 +59,9 @@ function SortableRow({ id, children }) {
     isDragging,
   } = useSortable({ id })
 
+  // lock horizontal movement — only allow vertical reordering
   const style = {
-    transform: CSS.Transform.toString(transform),
+    transform: transform ? `translate3d(0, ${Math.round(transform.y)}px, 0)` : undefined,
     transition,
     zIndex: isDragging ? 20 : undefined,
     position: isDragging ? 'relative' : undefined,
